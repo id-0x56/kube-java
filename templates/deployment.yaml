@@ -38,15 +38,33 @@ spec:
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
-            httpGet:
-              path: /
-              port: http
+            tcpSocket:
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
           readinessProbe:
-            httpGet:
-              path: /
-              port: http
+            tcpSocket:
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: application-properties
+              mountPath: /var/www/java-app/src/main/resources/application.properties
+              subPath: application.properties
+            - name: log4j-properties
+              mountPath: /var/www/java-app/src/main/resources/log4j.properties
+              subPath: log4j.properties
+      volumes:
+        - name: application-properties
+          configMap:
+            name: {{ include "java.fullname" . }}-application
+        - name: log4j-properties
+          configMap:
+            name: {{ include "java.fullname" . }}-log4j
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
